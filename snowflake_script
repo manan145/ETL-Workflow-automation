@@ -1,0 +1,64 @@
+DROP DATABASE IF EXISTS redfin_database_1;
+CREATE DATABASE redfin_database_1;
+-- CREATE WAREHOUSE redfin_warehouse;
+CREATE SCHEMA redfin_schema;
+// Create Table
+-- TRUNCATE TABLE redfin_database_1.redfin_schema.redfin_table;
+CREATE OR REPLACE TABLE redfin_database_1.redfin_schema.redfin_table (
+period_duration INT,
+city STRING,
+state STRING,
+property_type STRING,
+median_sale_price FLOAT,
+median_ppsf FLOAT,
+median_list_ppsf FLOAT,
+homes_sold FLOAT,
+inventory FLOAT,
+months_of_supply FLOAT,
+median_dom FLOAT,
+sold_above_list FLOAT,
+period_end_year STRING,
+period_end_month STRING
+);
+
+SELECT *
+FROM redfin_database_1.redfin_schema.redfin_table LIMIT 10;
+
+SELECT COUNT(*) FROM redfin_database_1.redfin_schema.redfin_table
+-- DESC TABLE redfin_database.redfin_schema.redfin_table;
+
+
+// Create file format object
+CREATE SCHEMA file_format_schema;
+CREATE OR REPLACE file format redfin_database_1.file_format_schema.my_parquet_format
+    type = 'PARQUET'
+    COMPRESSION = 'SNAPPY';
+    -- error_on_column_count_mismatch = FALSE;
+    
+// Create staging schema
+CREATE SCHEMA external_stage_schema;
+// Create staging
+CREATE OR REPLACE STAGE redfin_database_1.external_stage_schema.redfin_data_bucket_mj 
+    url="s3://redfin-data-bucket-mj/redfin-transform-zone-yml/redfin_data.parquet/"
+    credentials=(aws_key_id=''
+    aws_secret_key='')
+    FILE_FORMAT = redfin_database_1.file_format_schema.my_parquet_format;
+
+-- List files in the external stage to check the pattern
+LIST @redfin_database_1.external_stage_schema.redfin_data_bucket_mj PATTERN='.*part.*';
+
+// Create schema for snowpipe
+-- DROP SCHEMA redfin_database.snowpipe_schema;
+CREATE OR REPLACE SCHEMA redfin_database_1.snowpipe_schema;
+
+// Create Pipe
+CREATE OR REPLACE PIPE redfin_database_1.snowpipe_schema.redfin_snowpipe
+auto_ingest = TRUE
+AS 
+COPY INTO redfin_database_1.redfin_schema.redfin_table
+FROM @redfin_database_1.external_stage_schema.redfin_data_bucket_mj
+FILE_FORMAT = (TYPE = 'PARQUET')
+MATCH_BY_COLUMN_NAME = CASE_SENSITIVE
+PATTERN='.*part.*';
+
+DESC PIPE redfin_database_1.snowpipe_schema.redfin_snowpipe;
