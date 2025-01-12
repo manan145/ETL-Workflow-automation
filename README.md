@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository contains the implementation of a data pipeline for processing and visualizing real estate data from **Redfin's Data Source API**. The pipeline integrates AWS services, Snowflake, and Power BI for efficient ETL (Extract, Transform, Load) and visualization.
+This repository contains the implementation of a ETL data pipeline for processing and visualizing real estate data from **Redfin's Data Source API**. The pipeline integrates Airflow, AWS services, Snowflake, and Power BI for efficient ETL (Extract, Transform, Load) and visualization.
 
 ### Architecture
 
